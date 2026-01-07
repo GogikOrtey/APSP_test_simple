@@ -222,3 +222,16 @@ docker run -d --restart unless-stopped apsp-test-simple:0.01
 ```
 docker update --restart unless-stopped apsp-test
 ```
+
+
+
+
+
+
+---
+
+
+
+apsp-test-simple_v0.01.tar - первая рабочая версия
+apsp-test-simple_v0.3.tar - поменял циферку на 2 на главной странице
+apsp-test-simple_v0.4.tar - добавил ChatGPT в проект
