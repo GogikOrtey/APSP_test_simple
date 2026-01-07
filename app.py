@@ -15,7 +15,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-
+ 
 try:
     import playwright  # noqa: F401
 
