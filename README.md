@@ -1,4 +1,6 @@
-## Flask + Jinja: 3 страницы
+Readme проекта и самописные инструкции по сборке и запуску контейнера
+
+## Flask + Jinja: 3 страницы - тестовый проект
 
 Минимальный пример Flask-приложения с тремя страницами на Jinja и общей шапкой-навигацией.
 
@@ -103,4 +105,120 @@ docker save -o apsp-test-simple.tar apsp-test-simple:latest
 ```
 docker load -i apsp-test-simple.tar
 docker run --rm -p 8000:8000 --name apsp-web apsp-test-simple:latest
+```
+
+
+
+
+
+
+
+
+
+
+
+
+---
+
+## Запуск контейнера из снимка на Linux:
+
+1. Установи Docker на Linux
+
+Если это Ubuntu / Debian:
+
+```
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl enable --now docker
+```
+
+Проверь:
+
+```
+docker --version
+docker ps
+```
+
+Выполни:
+
+```
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+И проверь `docker ps` ещё раз, если он выдавал ошибку 
+
+
+
+
+---
+
+### Запуск контейнера:
+
+2. Скопируй файл образа на Linux
+
+Например через scp:
+
+```
+scp apsp-test-simple_v0.01.tar user@linux-server:/home/user/
+```
+
+Или любым способом (SFTP, флешка, etc).
+
+3. Загрузить образ в Docker
+
+Перейди в каталог с .tar:
+
+```
+cd /home/user
+```
+
+Загрузи образ:
+
+```
+docker load -i apsp-test-simple_v0.01.tar
+```
+
+Ожидаемый вывод:
+
+```
+Loaded image: apsp-test-simple:0.01
+```
+
+(имя может отличаться)
+
+Проверь:
+
+```
+docker images
+```
+
+Ты должен увидеть свой образ.
+
+4. Запустить контейнер
+
+Запуск стандартный:
+
+```
+docker run apsp-test-simple:0.01
+```
+
+---
+
+### А переживёт ли он перезагрузку сервера?
+
+По умолчанию — нет.
+
+После reboot контейнер не стартует.
+
+Чтобы он автоматически поднимался:
+
+```
+docker run -d --restart unless-stopped apsp-test-simple:0.01
+```
+
+или если контейнер уже создан:
+
+```
+docker update --restart unless-stopped apsp-test
 ```
