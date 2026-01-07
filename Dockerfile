@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.5
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -7,7 +8,8 @@ WORKDIR /app
 
 COPY requirements.txt .
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN pip install --no-cache-dir -r requirements.txt && python -m playwright install --with-deps chromium
+RUN --mount=type=cache,target=/root/.cache/pip --mount=type=cache,target=/ms-playwright \
+    pip install -r requirements.txt && python -m playwright install --with-deps chromium
 
 COPY . .
 

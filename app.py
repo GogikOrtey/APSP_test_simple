@@ -31,7 +31,8 @@ def _get_openai_api_key() -> str | None:
 
 
 def _get_openai_model() -> str:
-    return os.getenv("OPENAI_MODEL", "gpt-5.2")
+    # return os.getenv("OPENAI_MODEL", "gpt-5.2")
+    return os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 
 @app.post("/api/chat")
