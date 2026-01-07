@@ -25,6 +25,30 @@ python app.py
 
 В проект добавлены файлы: `Dockerfile`, `.dockerignore`, `docker-compose.yml`.
 
+#### Предварительно: установка Docker
+
+Если команда `docker` пишет что-то вроде `"docker" не является внутренней или внешней командой...` — значит Docker не установлен/не добавлен в PATH или не запущен.
+
+**Windows 10/11 (самый простой путь)**
+- Установи Docker Desktop (с официального сайта Docker) и запусти его.
+- Убедись, что включена виртуализация в BIOS/UEFI.
+- Если Docker Desktop попросит — включи/установи WSL2.
+- Проверка в новом терминале:
+
+```bash
+docker --version
+docker compose version
+```
+
+**Linux**
+- Установи Docker Engine и Compose plugin (пакеты зависят от дистрибутива).
+- Проверь:
+
+```bash
+docker --version
+docker compose version
+```
+
 #### Вариант A: через docker compose (рекомендую)
 
 1) Установите Docker Engine + Docker Compose plugin на Linux.
