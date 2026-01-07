@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request
 
 from dotenv import load_dotenv
 
@@ -14,6 +14,16 @@ load_dotenv()
 
 
 app = Flask(__name__)
+
+
+try:
+    import playwright  # noqa: F401
+
+    from playwright_controller import PlaywrightController
+
+    _pw = PlaywrightController()
+except Exception:  # pragma: no cover
+    _pw = None  # type: ignore
 
 
 def _get_openai_api_key() -> str | None:
@@ -83,6 +93,54 @@ def page3():
         page_title="Третья страница",
         sample_text="Это пример текста на третьей странице. Например, контакты или краткое резюме.",
     )
+
+
+@app.post("/api/browser/open")
+def api_browser_open():
+    if _pw is None:
+        return (
+            jsonify(
+                ok=False,
+                error="Playwright не установлен. Выполните: pip install -r requirements.txt и затем: python -m playwright install chromium",
+            ),
+            500,
+        )
+
+    data = request.get_json(silent=True) or {}
+    url = (data.get("url") or "").strip()
+    if not url:
+        return jsonify(ok=False, error="Пустой адрес"), 400
+
+    try:
+        final_url = _pw.open_url(url)
+        return jsonify(ok=True, url=final_url)
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
+
+
+@app.get("/api/browser/screenshot")
+def api_browser_screenshot():
+    if _pw is None:
+        return (
+            jsonify(
+                ok=False,
+                error="Playwright не установлен. Выполните: pip install -r requirements.txt и затем: python -m playwright install chromium",
+            ),
+            500,
+        )
+
+    try:
+        png = _pw.get_screenshot_png()
+        return Response(
+            png,
+            mimetype="image/png",
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+            },
+        )
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
 
 
 if __name__ == "__main__":

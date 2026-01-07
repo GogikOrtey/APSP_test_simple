@@ -12,6 +12,14 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+### Playwright (для 3-й страницы)
+
+Локально (один раз после установки зависимостей) нужно поставить браузер Chromium:
+
+```bash
+python -m playwright install chromium
+```
+
 ### Запуск
 
 ```bash

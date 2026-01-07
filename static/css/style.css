@@ -177,3 +177,86 @@ body{
 }
 
 
+/* Page 3: Playwright preview */
+.browser{
+  margin-top:18px;
+  display:grid;
+  gap:16px;
+}
+
+.browser__form{
+  display:grid;
+  gap:10px;
+}
+
+.browser__label{
+  font-size:13px;
+  font-weight:600;
+  color:rgba(17,24,39,.78);
+}
+
+.browser__row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.browser__input{
+  flex:1 1 360px;
+  min-width:220px;
+  padding:12px 12px;
+  border-radius:14px;
+  border:1px solid rgba(17,24,39,.14);
+  background:#fff;
+  font:inherit;
+  line-height:1.45;
+  outline:none;
+  box-shadow: 0 10px 20px rgba(0,0,0,.06);
+}
+
+.browser__input:focus{
+  border-color: rgba(59,130,246,.55);
+  box-shadow: 0 14px 28px rgba(59,130,246,.15);
+}
+
+.browser__meta{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.browser__status{
+  font-size:13px;
+  color:rgba(17,24,39,.55);
+}
+
+.browser__preview{
+  border:1px solid rgba(17,24,39,.10);
+  border-radius:16px;
+  padding:12px 12px;
+  background: linear-gradient(180deg, rgba(243,244,246,.55), rgba(243,244,246,.20));
+}
+
+.browser__frame{
+  margin-top:8px;
+  border-radius:14px;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid rgba(17,24,39,.10);
+  min-height:220px;
+  box-shadow: 0 10px 20px rgba(0,0,0,.06);
+}
+
+.browser__img{
+  display:block;
+  width:100%;
+  height:auto;
+}
+
+.browser__error{
+  margin-top:10px;
+  color:#b91c1c;
+  font-size:13px;
+}
+
