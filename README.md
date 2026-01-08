@@ -69,6 +69,10 @@ docker compose version
 docker compose up --build -d
 ```
 
+Если при открытии 3-й страницы вы видите ошибку вида:
+`BrowserType.launch: Executable doesn't exist ... /ms-playwright/...`
+— это значит, что **в образе нет скачанных браузеров Playwright**. Решение: **пересобрать образ** (`docker compose up --build -d` или `docker build ...`) и, если переносите образ на другую машину через `docker save/load`, сделать `docker save` заново.
+
 Открывайте в браузере:
 - `http://<IP_вашего_Linux>:8000/`
 - `http://<IP_вашего_Linux>:8000/page2`
@@ -100,9 +104,13 @@ docker run --rm -p 8000:8000 --name apsp-web apsp-test-simple:latest
 
 На Windows (в папке проекта):
 ```
-docker build -t apsp-test-simple:latest .
-docker save -o apsp-test-simple.tar apsp-test-simple:latest
+docker build -t apsp-test-simple:0.1 .
+docker save -o apsp-test-simple_v0.1.tar apsp-test-simple:0.1
 ```
+
+
+Билд = 10-12 минут (если с браузерами Playwright внутри)
+
 
 > apsp-test-simple:latest - это будет image  
 >
@@ -245,7 +253,7 @@ docker run -d -p 8000:8000 --name apsp-test-container apsp-test-simple:latest
 apsp-test-simple_v0.01.tar - первая рабочая версия
 apsp-test-simple_v0.3.tar - поменял циферку на 2 на главной странице
 apsp-test-simple_v0.4.tar - добавил ChatGPT в проект
-apsp-test-simple_v0.7.tar - последняя версия теста, с возможностью открыть несколько вкладок
+apsp-test-simple_v0.8.tar - последняя версия теста, с возможностью открыть несколько вкладок
 
 ————————————————————————
 
