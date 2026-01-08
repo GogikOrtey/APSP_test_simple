@@ -18,6 +18,7 @@
       </div>
       <div class="browser__meta">
         <span id="browser-status" class="browser__status" aria-live="polite"></span>
+        <span id="browser-pages-count" class="browser__status"></span>
       </div>
     </form>
 
@@ -36,6 +37,7 @@
       const urlEl = document.getElementById("browser-url");
       const btn = document.getElementById("browser-open-btn");
       const statusEl = document.getElementById("browser-status");
+      const pagesCountEl = document.getElementById("browser-pages-count");
       const imgEl = document.getElementById("browser-img");
       const errorEl = document.getElementById("browser-error");
 
@@ -44,6 +46,15 @@
 
       function setStatus(text) {
         statusEl.textContent = text || "";
+      }
+
+      function setPagesCount(count) {
+        if (!pagesCountEl) return;
+        if (typeof count !== "number") {
+          pagesCountEl.textContent = "";
+          return;
+        }
+        pagesCountEl.textContent = "Открытых вкладок: " + String(count);
       }
 
       function setError(text) {
@@ -109,9 +120,25 @@
         }
       }
 
+      async function refreshPagesCount() {
+        try {
+          const res = await fetch("/api/browser/pages_count?ts=" + Date.now(), {
+            cache: "no-store",
+          });
+          const payload = await res.json();
+          if (!res.ok || !payload || !payload.ok) return;
+          setPagesCount(payload.count);
+        } catch (e) {
+          // ignore
+        }
+      }
+
       function startAutoRefresh() {
         if (timer) return;
-        timer = setInterval(refreshScreenshot, 5000);
+        timer = setInterval(function () {
+          refreshScreenshot();
+          refreshPagesCount();
+        }, 5000);
       }
 
       form.addEventListener("submit", async function (e) {
@@ -128,6 +155,7 @@
           urlEl.value = finalUrl;
           setStatus("Открыто");
           await refreshScreenshot();
+          await refreshPagesCount();
           startAutoRefresh();
         } catch (err) {
           setStatus("");

@@ -19,7 +19,8 @@ class PlaywrightController:
         self._playwright = None
         self._browser = None
         self._context = None
-        self._page = None
+        self._pages = []
+        self._active_page = None
         self._op_lock = None
 
         self._last_screenshot_ts: float = 0.0
@@ -51,6 +52,20 @@ class PlaywrightController:
             loop.run_until_complete(self._async_init())
             self._ready.set()
             loop.run_forever()
+            # Аккуратный shutdown event-loop (важно для Windows/Proactor).
+            try:
+                pending = asyncio.all_tasks(loop)
+                for task in pending:
+                    task.cancel()
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                loop.run_until_complete(loop.shutdown_asyncgens())
+            except Exception:
+                pass
+            try:
+                loop.close()
+            except Exception:
+                pass
         except Exception as e:  # pragma: no cover
             self._init_error = str(e)
             self._ready.set()
@@ -69,7 +84,8 @@ class PlaywrightController:
             viewport={"width": 1280, "height": 720},
             device_scale_factor=1,
         )
-        self._page = await self._context.new_page()
+        self._pages = []
+        self._active_page = None
         self._op_lock = asyncio.Lock()
 
     def _run(self, coro, timeout: float = 60):
@@ -88,19 +104,58 @@ class PlaywrightController:
             url = "https://" + url
         return url
 
-    async def _open_async(self, url: str) -> str:
-        if not self._page:
-            raise RuntimeError("Playwright page не инициализирован")
+    async def _ensure_active_page(self) -> None:
+        if self._active_page and not self._active_page.is_closed():
+            return
+        if not self._context:
+            raise RuntimeError("Playwright context не инициализирован")
+        page = await self._context.new_page()
+        self._pages.append(page)
+        self._active_page = page
 
+    def get_open_pages_count(self) -> int:
+        return int(self._run(self._count_pages_async(), timeout=10))
+
+    async def _count_pages_async(self) -> int:
+        # Чистим закрытые страницы, чтобы счётчик не разрастался.
+        if self._op_lock:
+            async with self._op_lock:
+                self._pages = [p for p in self._pages if p and not p.is_closed()]
+                return len(self._pages)
+        self._pages = [p for p in self._pages if p and not p.is_closed()]
+        return len(self._pages)
+
+    async def _open_async(self, url: str) -> str:
+        if not self._context:
+            raise RuntimeError("Playwright context не инициализирован")
         if not self._op_lock:
             raise RuntimeError("Playwright lock не инициализирован")
 
         async with self._op_lock:
             url = self._normalize_url(url)
-            resp = await self._page.goto(url, wait_until="domcontentloaded", timeout=60_000)
-            # Иногда resp может быть None (например, about:blank), но это ок.
-            _ = resp
-            return self._page.url
+            # Требование: каждый новый адрес открываем в новой вкладке (Page).
+            prev_active = self._active_page
+            page = await self._context.new_page()
+            self._pages.append(page)
+            self._active_page = page
+
+            try:
+                resp = await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+                # Иногда resp может быть None (например, about:blank), но это ок.
+                _ = resp
+                return page.url
+            except Exception:
+                # Если открыть не удалось — вкладку закрываем, чтобы счётчик не рос.
+                try:
+                    await page.close()
+                except Exception:
+                    pass
+                self._pages = [p for p in self._pages if p and not p.is_closed()]
+                if prev_active and not prev_active.is_closed():
+                    self._active_page = prev_active
+                else:
+                    self._active_page = None
+                raise
 
     def open_url(self, url: str) -> str:
         final_url = self._run(self._open_async(url), timeout=70)
@@ -110,13 +165,14 @@ class PlaywrightController:
         return final_url
 
     async def _screenshot_async(self) -> bytes:
-        if not self._page:
-            raise RuntimeError("Playwright page не инициализирован")
         if not self._op_lock:
             raise RuntimeError("Playwright lock не инициализирован")
 
         async with self._op_lock:
-            return await self._page.screenshot(type="png", full_page=True)
+            await self._ensure_active_page()
+            if not self._active_page:
+                raise RuntimeError("Playwright page не инициализирован")
+            return await self._active_page.screenshot(type="png", full_page=True)
 
     def get_screenshot_png(self) -> bytes:
         now = time.time()
@@ -127,5 +183,56 @@ class PlaywrightController:
         self._last_screenshot = data
         self._last_screenshot_ts = now
         return data
+
+    async def _close_async(self) -> None:
+        # Закрытие контекста закрывает все вкладки.
+        if self._context:
+            try:
+                await self._context.close()
+            except Exception:
+                pass
+        if self._browser:
+            try:
+                await self._browser.close()
+            except Exception:
+                pass
+        if self._playwright:
+            try:
+                await self._playwright.stop()
+            except Exception:
+                pass
+
+        self._context = None
+        self._browser = None
+        self._playwright = None
+        self._pages = []
+        self._active_page = None
+        self._op_lock = None
+
+    def stop(self) -> None:
+        # Можно вызывать многократно, в том числе если start() так и не был вызван.
+        loop = self._loop
+        if not loop:
+            return
+
+        try:
+            fut = asyncio.run_coroutine_threadsafe(self._close_async(), loop)
+            fut.result(timeout=30)
+        except Exception:
+            pass
+
+        try:
+            loop.call_soon_threadsafe(loop.stop)
+        except Exception:
+            pass
+
+        t = self._thread
+        if t and t.is_alive():
+            try:
+                t.join(timeout=5)
+            except Exception:
+                pass
+
+        self._loop = None
 
 

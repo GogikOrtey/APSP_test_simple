@@ -1,4 +1,6 @@
+import atexit
 import os
+import signal
 
 from flask import Flask, Response, jsonify, render_template, request
 
@@ -24,6 +26,32 @@ try:
     _pw = PlaywrightController()
 except Exception:  # pragma: no cover
     _pw = None  # type: ignore
+
+
+def _shutdown_playwright() -> None:
+    global _pw
+    if _pw is None:
+        return
+    try:
+        _pw.stop()
+    except Exception:
+        pass
+
+
+atexit.register(_shutdown_playwright)
+
+try:
+    def _handle_exit_signal(signum, _frame):  # type: ignore[no-untyped-def]
+        _shutdown_playwright()
+        if signum == getattr(signal, "SIGINT", None):
+            raise KeyboardInterrupt
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGINT, _handle_exit_signal)
+    signal.signal(signal.SIGTERM, _handle_exit_signal)
+except Exception:
+    # В некоторых режимах/платформах сигналы могут быть недоступны — atexit всё равно сработает.
+    pass
 
 
 def _get_openai_api_key() -> str | None:
@@ -140,6 +168,24 @@ def api_browser_screenshot():
                 "Pragma": "no-cache",
             },
         )
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
+
+
+@app.get("/api/browser/pages_count")
+def api_browser_pages_count():
+    if _pw is None:
+        return (
+            jsonify(
+                ok=False,
+                error="Playwright не установлен. Выполните: pip install -r requirements.txt и затем: python -m playwright install chromium",
+            ),
+            500,
+        )
+
+    try:
+        count = _pw.get_open_pages_count()
+        return jsonify(ok=True, count=count)
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
 
