@@ -140,18 +140,19 @@ sudo apt install -y docker.io
 sudo systemctl enable --now docker
 ```
 
-Проверь:
-
-```
-docker --version
-docker ps
-```
-
 Выполни:
 
 ```
 sudo usermod -aG docker $USER
 newgrp docker
+```
+
+
+Проверь:
+
+```
+docker --version
+docker ps
 ```
 
 И проверь `docker ps` ещё раз, если он выдавал ошибку 
@@ -209,6 +210,7 @@ docker images
 
 ```
 docker run apsp-test-simple:0.01
+docker run -d -p 8000:8000 --name apsp-test-container apsp-test-simple:latest
 ```
 
 ---
@@ -238,8 +240,32 @@ docker update --restart unless-stopped apsp-test
 
 ---
 
-
+docker run -d -p 8000:8000 --name apsp-test-container apsp-test-simple:latest
 
 apsp-test-simple_v0.01.tar - первая рабочая версия
 apsp-test-simple_v0.3.tar - поменял циферку на 2 на главной странице
 apsp-test-simple_v0.4.tar - добавил ChatGPT в проект
+apsp-test-simple_v0.7.tar - последняя версия теста, с возможностью открыть несколько вкладок
+
+————————————————————————
+
+Загрузить снимок:
+docker load -i НАЗВАНИЕ_СНИМКА.tar
+docker load -i apsp-test-simple_v0.3.tar
+
+Просмотреть все загруженные снимки в докере:
+docker images
+
+Запустить снимок в контейнер:
+docker run -d -p 8000:8000 --name КОРОТКОЕ_НАЗВАНИЕ_ДЛЯ_УДОБСТВА НАЗВАНИЕ_СНИМКА:ВЕРСИЯ_СНИМКА
+docker run -d -p 8000:8000 --name apsp-test-simple_v0.3 apsp-test-simple:0.3
+
+Просмотреть запущенные контейнеры:
+docker ps
+
+Остановить контейнер по имени:
+docker stop КОРОТКОЕ_НАЗВАНИЕ_ДЛЯ_УДОБСТВА
+docker stop apsp-test-simple_v0.3
+
+Запустить контейнер после остановки по имени:
+docker start КОРОТКОЕ_НАЗВАНИЕ_ДЛЯ_УДОБСТВА
