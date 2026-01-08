@@ -10,7 +10,7 @@ except Exception:  # pragma: no cover
     OpenAI = None  # type: ignore
 
 
-load_dotenv()
+load_dotenv() 
 
 
 app = Flask(__name__)
